@@ -1,24 +1,22 @@
 {
-  "name": "website",
-  "version": "0.1.0",
+  "name": "placement-support-monorepo",
+  "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "backend",
+    "apps/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.1.4",
-    "postcss": "^8.5.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "dev": "npm run dev:backend & npm run dev:student & npm run dev:tpo & npm run dev:admin",
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:student": "npm run dev --workspace=apps/student-app",
+    "dev:tpo": "npm run dev --workspace=apps/tpo-app",
+    "dev:admin": "npm run dev --workspace=apps/super-admin-app",
+    "install:all": "npm install"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
     "babel-plugin-react-compiler": "1.0.0",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.4",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "4.0.0-alpha.25",
+    "@tailwindcss/postcss": "4.0.0-alpha.25"
   }
 }

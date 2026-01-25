@@ -1,0 +1,30 @@
+{
+  "name": "student-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "16.1.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "lucide-react": "^0.473.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "postcss": "^8",
+    "tailwindcss": "4.0.0-alpha.25",
+    "@tailwindcss/postcss": "4.0.0-alpha.25",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.4"
+  }
+}
