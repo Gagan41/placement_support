@@ -27,9 +27,6 @@ create table public.users (
   role public.user_role not null,
   college_id uuid null,
   created_at timestamp with time zone null default now(),
-  otp_code text null,
-  otp_expires_at timestamp with time zone null,
-  otp_verified boolean null default false,
   admin_secret_hash text null,
   last_login_at timestamp with time zone null,
   failed_login_attempts integer null default 0,
@@ -44,6 +41,28 @@ create table public.users (
     )
   )
 ) TABLESPACE pg_default;
+
+create index IF not exists idx_users_email on public.users using btree (email) TABLESPACE pg_default;
+
+create index IF not exists idx_users_role on public.users using btree (role) TABLESPACE pg_default;
+
+-- 4. Create Login OTPs Table
+create table public.login_otps (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  user_id uuid not null,
+  otp_hash text not null,
+  expires_at timestamp with time zone not null,
+  attempts integer not null default 0,
+  used boolean not null default false,
+  created_at timestamp with time zone null default now(),
+  constraint login_otps_pkey primary key (id),
+  constraint login_otps_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint otp_expires_future check ((expires_at > created_at))
+) TABLESPACE pg_default;
+
+create index IF not exists idx_login_otps_user_id on public.login_otps using btree (user_id) TABLESPACE pg_default;
+
+create index IF not exists idx_login_otps_expires_at on public.login_otps using btree (expires_at) TABLESPACE pg_default;
 
 -- 4. Create Exams Table
 create table public.exams (

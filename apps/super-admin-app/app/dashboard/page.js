@@ -15,14 +15,14 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('token');
 
     if (!userData || !token) {
-      router.replace('/admin/login');
+      router.replace('/login');
       return;
     }
 
     const parsedUser = JSON.parse(userData);
 
     if (parsedUser.role !== 'admin') {
-      router.replace('/admin/login');
+      router.replace('/login');
       return;
     }
 
@@ -36,7 +36,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     localStorage.clear();
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
-    router.push('/admin/login');
+    router.push('/login');
   };
 
   return (
@@ -47,19 +47,19 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-4">
-          <Link href="/admin/dashboard" className="block px-4 py-2 bg-gray-900 border border-gray-800 rounded">
+          <Link href="/dashboard" className="block px-4 py-2 bg-gray-900 border border-gray-800 rounded">
             Overview
           </Link>
-          <Link href="/admin/dashboard/colleges" className="block px-4 py-2 text-gray-400 hover:text-white">
+          <Link href="/dashboard/colleges" className="block px-4 py-2 text-gray-400 hover:text-white">
             Colleges
           </Link>
-          <Link href="/admin/dashboard/tpos" className="block px-4 py-2 text-gray-400 hover:text-white">
+          <Link href="/dashboard/tpos" className="block px-4 py-2 text-gray-400 hover:text-white">
             TPO Management
           </Link>
-          <Link href="/admin/dashboard/logs" className="block px-4 py-2 text-gray-400 hover:text-white">
+          <Link href="/dashboard/logs" className="block px-4 py-2 text-gray-400 hover:text-white">
             System Logs
           </Link>
-          <Link href="/admin/dashboard/analytics" className="block px-4 py-2 text-gray-400 hover:text-white">
+          <Link href="/dashboard/analytics" className="block px-4 py-2 text-gray-400 hover:text-white">
             Analytics
           </Link>
         </nav>

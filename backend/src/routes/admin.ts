@@ -32,12 +32,60 @@ router.get('/integrity-logs', authenticateJWT, authorizeRoles('admin'), async (r
             JOIN attempts a ON il.attempt_id = a.id
             JOIN exams e ON a.exam_id = e.id
             JOIN users u ON a.student_id = u.id
-            ORDER BY il.timestamp DESC
+            ORDER BY il.created_at DESC
             LIMIT 100
         `);
         res.json(result.rows);
     } catch (err) {
+        console.error('Integrity Logs Error:', err);
         res.status(500).json({ error: 'Failed to fetch global logs' });
+    }
+});
+
+// Get comprehensive analytics
+router.get('/analytics', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
+    try {
+        // Daily registrations (last 30 days)
+        const registrations = await query(`
+            SELECT date_trunc('day', created_at) as date, COUNT(*) as count
+            FROM users
+            WHERE created_at > now() - interval '30 days'
+            GROUP BY date
+            ORDER BY date ASC
+        `);
+
+        // Daily exam attempts (last 30 days)
+        const attempts = await query(`
+            SELECT date_trunc('day', submitted_at) as date, COUNT(*) as count
+            FROM attempts
+            WHERE submitted_at > now() - interval '30 days'
+            GROUP BY date
+            ORDER BY date ASC
+        `);
+
+        // Role distribution
+        const roles = await query(`
+            SELECT role, COUNT(*) as count
+            FROM users
+            GROUP BY role
+        `);
+
+        // Integrity issue breakdown
+        const integrityDist = await query(`
+            SELECT type, COUNT(*) as count
+            FROM integrity_logs
+            GROUP BY type
+        `);
+
+        res.json({
+            registrations: registrations.rows,
+            attempts: attempts.rows,
+            roles: roles.rows,
+            integrityDistribution: integrityDist.rows
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to fetch analytics data' });
     }
 });
 
