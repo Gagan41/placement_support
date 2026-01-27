@@ -13,6 +13,7 @@ export default function ExamAttemptPage() {
   const [timeLeft, setTimeLeft] = useState(null);
   const [loading, setLoading] = useState(true);
   const [attemptId, setAttemptId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   // Logging utility
@@ -44,7 +45,14 @@ export default function ExamAttemptPage() {
         
         setExam(currentExam);
         setQuestions(questionsData);
-        setTimeLeft(currentExam.duration * 60);
+        
+        // Calculate remaining time based on server start time to persist across reloads
+        const startTime = new Date(attemptRes.started_at).getTime();
+        const durationMs = currentExam.duration * 60 * 1000;
+        const endTime = startTime + durationMs;
+        const remainingSeconds = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+        
+        setTimeLeft(remainingSeconds);
       } catch (err) {
         alert(err.message || 'Failed to start exam');
         router.push('/dashboard/exams');
@@ -58,7 +66,7 @@ export default function ExamAttemptPage() {
   // Timer logic
   useEffect(() => {
     if (timeLeft === 0) {
-      handleSubmit();
+      handleSubmit(true);
       return;
     }
     if (timeLeft === null) return;
@@ -142,17 +150,25 @@ export default function ExamAttemptPage() {
     };
   }, [attemptId, logEvent]);
 
-  const handleSubmit = async () => {
-    if (!attemptId) return;
+  const handleSubmit = async (auto = false) => {
+    if (!attemptId || isSubmitting) return;
+    setIsSubmitting(true);
+    
+    if (auto) {
+        // Optional: toast or minimal alert
+        console.log("Auto-submitting due to timeout");
+    }
+
     try {
       const result = await apiFetch(`/exams/${examId}/attempt`, {
         method: 'POST',
         body: JSON.stringify({ answers, attempt_id: attemptId }),
       });
-      alert(`Exam Submitted! Your Score: ${result.score}`);
+      alert(auto ? `Time's Up! Exam Submitted. Score: ${result.score}` : `Exam Submitted! Your Score: ${result.score}`);
       router.push('/dashboard');
     } catch (err) {
-      alert('Submission failed');
+      alert('Submission failed: ' + (err.message || 'Unknown error'));
+      setIsSubmitting(false);
     }
   };
 
@@ -198,10 +214,11 @@ export default function ExamAttemptPage() {
 
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-center">
             <button 
-                onClick={handleSubmit}
-                className="bg-blue-600 text-white px-12 py-3 rounded-lg font-bold text-lg hover:bg-blue-700 shadow-lg"
+                onClick={() => handleSubmit(false)}
+                disabled={isSubmitting}
+                className={`px-12 py-3 rounded-lg font-bold text-lg shadow-lg ${isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
             >
-                Submit Exam
+                {isSubmitting ? 'Submitting...' : 'Submit Exam'}
             </button>
         </div>
       </div>

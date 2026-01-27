@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiFetch } from '@/lib/api';
 
 export default function StudentDashboard() {
   const [user, setUser] = useState(null);
+  const [stats, setStats] = useState({ upcoming_exams: 0, completed_attempts: 0 });
   const router = useRouter();
 
   useEffect(() => {
@@ -13,6 +15,10 @@ export default function StudentDashboard() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+
+    apiFetch('/analytics/student/dashboard-stats')
+      .then(setStats)
+      .catch(console.error);
   }, []);
 
   const handleLogout = () => {
@@ -43,11 +49,11 @@ export default function StudentDashboard() {
         <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100 flex flex-col justify-between group hover:border-blue-200 transition-all">
             <h3 className="font-bold text-slate-400 uppercase text-[10px] tracking-widest group-hover:text-blue-500 transition-colors">Upcoming Exams</h3>
-            <p className="text-4xl font-black text-slate-900">0</p>
+            <p className="text-4xl font-black text-slate-900">{stats.upcoming_exams}</p>
           </div>
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100 flex flex-col justify-between group hover:border-green-200 transition-all">
             <h3 className="font-bold text-slate-400 uppercase text-[10px] tracking-widest group-hover:text-green-500 transition-colors">Completed Attempts</h3>
-            <p className="text-4xl font-black text-slate-900">0</p>
+            <p className="text-4xl font-black text-slate-900">{stats.completed_attempts}</p>
           </div>
         </div>
       </main>

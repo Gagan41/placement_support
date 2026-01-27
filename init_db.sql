@@ -107,7 +107,7 @@ create table public.integrity_logs (
   attempt_id uuid null,
   type text not null,
   metadata jsonb null,
-  timestamp timestamp with time zone null default now(),
+  created_at timestamp with time zone null default now(),
   constraint integrity_logs_pkey primary key (id),
   constraint integrity_logs_attempt_id_fkey foreign KEY (attempt_id) references attempts (id)
 ) TABLESPACE pg_default;
