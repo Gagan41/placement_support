@@ -204,4 +204,113 @@ router.get(
   }
 );
 
+
+/* ===========================
+   PASSWORD RESET FLOW
+=========================== */
+
+/* 1. REQUEST RESET (Email -> OTP) */
+router.post('/request-password-reset', async (req: any, res: any) => {
+  let { email } = req.body;
+  email = email?.trim().toLowerCase();
+
+  try {
+    const userResult = await query('SELECT id, email FROM users WHERE email = $1', [email]);
+    
+    if (userResult.rows.length === 0) {
+      // Return success even if user not found to prevent enumeration
+      return res.json({ message: 'If account exists, OTP sent', otpId: 'simulation' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Create OTP
+    const otp = generateOTP();
+    const otpHash = hashOTP(otp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    const otpResult = await query(
+      `INSERT INTO login_otps (user_id, otp_hash, expires_at)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [user.id, otpHash, expiresAt]
+    );
+
+    // Send Email
+    // Import dynamically if needed or assume it's available from top-level import
+    const { sendPasswordResetEmail } = await import('../utils/mailer');
+    sendPasswordResetEmail(user.email, otp).catch(err => console.error('Failed to send reset OTP:', err));
+
+    res.json({ message: 'OTP sent', otpId: otpResult.rows[0].id });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* 2. VERIFY RESET OTP */
+router.post('/verify-reset-otp', async (req: any, res: any) => {
+  const { otpId, otp } = req.body;
+
+  try {
+    const result = await query('SELECT * FROM login_otps WHERE id = $1', [otpId]);
+    
+    if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid OTP' });
+    const record = result.rows[0];
+
+    if (record.used) return res.status(400).json({ error: 'OTP already used' });
+    if (new Date(record.expires_at) < new Date()) return res.status(410).json({ error: 'OTP expired' });
+    
+    if (hashOTP(otp) !== record.otp_hash) {
+       await query('UPDATE login_otps SET attempts = attempts + 1 WHERE id = $1', [otpId]);
+       return res.status(401).json({ error: 'Invalid OTP' });
+    }
+
+    // Mark used
+    await query('UPDATE login_otps SET used = true WHERE id = $1', [otpId]);
+
+    // Issue short-lived reset token
+    // We reuse the JWT mechanism but maybe add a special scope/role claim? 
+    // For simplicity, let's just sign a token with a 'reset_password' purpose.
+    const resetToken = jwt.sign(
+      { id: record.user_id, purpose: 'reset_password' },
+      JWT_SECRET,
+      { expiresIn: '15m' }
+    );
+
+    res.json({ message: 'OTP verified', resetToken });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+/* 3. RESET PASSWORD */
+router.post('/reset-password', async (req: any, res: any) => {
+  const { resetToken, newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password too short' });
+  }
+
+  try {
+    const decoded: any = jwt.verify(resetToken, JWT_SECRET);
+    if (decoded.purpose !== 'reset_password') {
+      return res.status(403).json({ error: 'Invalid token purpose' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    await query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [hashedPassword, decoded.id]
+    );
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
 export default router;

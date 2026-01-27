@@ -4,10 +4,11 @@ export function middleware(request) {
   const token = request.cookies.get('token')?.value;
   const { pathname } = request.nextUrl;
 
-  // Allow login and signup pages
-  if (pathname === '/login' || pathname === '/signup') {
+  // Allow login, signup, and forgot-password pages
+  if (pathname === '/login' || pathname === '/signup' || pathname === '/forgot-password') {
     return NextResponse.next();
   }
+
 
   // Redirect to login if no token
   if (!token) {

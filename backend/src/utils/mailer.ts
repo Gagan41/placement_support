@@ -10,6 +10,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+
 export const sendOTPEmail = async (to: string, otp: string) => {
   await transporter.sendMail({
     from: process.env.SMTP_FROM,
@@ -18,3 +19,13 @@ export const sendOTPEmail = async (to: string, otp: string) => {
     text: `Your OTP is ${otp}. It is valid for 5 minutes.`
   });
 };
+
+export const sendPasswordResetEmail = async (to: string, otp: string) => {
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to,
+    subject: 'Password Reset Request',
+    text: `Your password reset OTP is ${otp}. It is valid for 10 minutes.`
+  });
+};
+
