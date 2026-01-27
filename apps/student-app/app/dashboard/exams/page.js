@@ -37,12 +37,21 @@ export default function StudentExamsPage() {
                     <span className="text-slate-600">{exam.duration} minutes</span>
                 </div>
               </div>
-              <Link 
-                href={`/dashboard/exams/${exam.id}`} 
-                className="w-full text-center bg-blue-700 text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-blue-800 shadow-lg hover:shadow-blue-200 transition-all"
-              >
-                Launch Assessment
-              </Link>
+              {exam.is_attempted ? (
+                <button 
+                  disabled 
+                  className="w-full text-center bg-gray-300 text-gray-500 py-3 rounded-xl font-black uppercase tracking-widest cursor-not-allowed"
+                >
+                  Completed
+                </button>
+              ) : (
+                <Link 
+                    href={`/dashboard/exams/${exam.id}`} 
+                    className="w-full text-center bg-blue-700 text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-blue-800 shadow-lg hover:shadow-blue-200 transition-all"
+                >
+                    Launch Assessment
+                </Link>
+              )}
             </div>
           ))}
           {exams.length === 0 && (

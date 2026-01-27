@@ -40,7 +40,7 @@ export default function ExamIntegrityPage() {
               {logs.map((log) => (
                 <tr key={log.id} className="hover:bg-red-50/10 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
-                    {new Date(log.timestamp).toLocaleString()}
+                    {new Date(log.created_at).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-slate-900">{log.student_name}</div>

@@ -8,17 +8,25 @@ const router = express.Router();
 // Get all exams for the user's college
 router.get('/', authenticateJWT, collegeIsolation, async (req: AuthRequest, res: any) => {
     try {
-        let sql = 'SELECT * FROM exams WHERE 1=1';
-        const params: any[] = [];
+        let sql = `
+            SELECT e.*, 
+                   (CASE WHEN a.submitted_at IS NOT NULL THEN true ELSE false END) as is_attempted,
+                   a.score
+            FROM exams e
+            LEFT JOIN attempts a ON e.id = a.exam_id AND a.student_id = $1
+            WHERE 1=1
+        `;
+        const params: any[] = [req.user?.id];
 
         if (req.user?.role !== 'admin') {
-            sql += ' AND college_id = $1';
+            sql += ' AND e.college_id = $2';
             params.push(req.user?.college_id);
         }
 
         const result = await query(sql, params);
         res.json(result.rows);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ error: 'Failed to fetch exams' });
     }
 });
@@ -96,12 +104,12 @@ router.post('/:examId/attempt', authenticateJWT, authorizeRoles('student'), asyn
 
         // Update existing attempt
         const attempt = await query(
-            'UPDATE attempts SET score = $1, submitted_at = NOW() WHERE id = $2 AND student_id = $3 RETURNING *',
+            'UPDATE attempts SET score = $1, submitted_at = NOW() WHERE id = $2 AND student_id = $3 AND submitted_at IS NULL RETURNING *',
             [score, attempt_id, req.user?.id]
         );
 
         if (attempt.rows.length === 0) {
-            return res.status(404).json({ error: 'Attempt not found' });
+            return res.status(400).json({ error: 'Attempt already submitted or invalid' });
         }
 
         res.status(200).json(attempt.rows[0]);
@@ -126,7 +134,7 @@ router.get('/:examId/integrity', authenticateJWT, authorizeRoles('tpo', 'admin')
              JOIN attempts a ON il.attempt_id = a.id
              JOIN users u ON a.student_id = u.id
              WHERE a.exam_id = $1
-             ORDER BY il.timestamp DESC`,
+             ORDER BY il.created_at DESC`,
             [examId]
         );
         res.json(logs.rows);
