@@ -1,11 +1,13 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export async function apiFetch(endpoint, options = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const token =
+    typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
   const headers = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...options.headers
   };
 
   if (token) {
@@ -14,13 +16,15 @@ export async function apiFetch(endpoint, options = {}) {
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
-    headers,
+    headers
   });
 
+  const data = await response.json().catch(() => ({}));
+
+  // 🔴 THIS WAS THE BUG
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'API call failed');
+    throw data; // ✅ NOT new Error()
   }
 
-  return response.json();
+  return data;
 }
