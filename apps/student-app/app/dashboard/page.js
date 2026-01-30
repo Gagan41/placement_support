@@ -57,7 +57,7 @@ export default function StudentDashboard() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
-
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   // 1. Initialize User and Events from LocalStorage
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -154,8 +154,8 @@ export default function StudentDashboard() {
 
   return (
     <div className="min-h-screen bg-[#e8edff] flex overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white shadow-lg rounded-r-3xl p-6">
+      {/* Sidebar (Desktop Only) */}
+      <aside className="hidden lg:block w-64 bg-white shadow-lg rounded-r-3xl p-6">
         <div className="relative group cursor-pointer">
           <img
             src="https://lh3.googleusercontent.com/u/0/d/1f4qSF9eLf0IFr_bIiajaCJJkyuW2l_OB"
@@ -187,11 +187,86 @@ export default function StudentDashboard() {
           Logout
         </button>
       </aside>
+{/* ================= MOBILE TOP BAR ================= */}
+<div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-white shadow z-30 flex items-center px-4 gap-2">
 
+  {/* Hamburger */}
+  <button
+    onClick={() => setMobileSidebarOpen(true)}
+    className="text-xl font-bold flex-shrink-0  text-blue-700"
+  >
+    ☰
+  </button>
+
+  {/* Student Name */}
+  <span className="flex-1 text-center text-sm font-bold truncate text-blue-600">
+    <TextType
+              text={`Hello, ${user?.name || "Student"}`}
+              typingSpeed={60}
+              pauseDuration={1200}
+              cursorCharacter="_"
+              className="inline"
+              showCursor
+              textColors={["blue"]}
+            />
+  </span>
+
+  {/* Right Icons */}
+  <div className="flex items-center gap-3 flex-shrink-0">
+    <Bell size={18} />
+    <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold text-blue-700">
+      {user?.name?.charAt(0) || "U"}
+    </div>
+  </div>
+
+</div>
+{/* ================= MOBILE SIDEBAR ================= */}
+{mobileSidebarOpen && (
+  <>
+    {/* Backdrop */}
+    <div
+      className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+      onClick={() => setMobileSidebarOpen(false)}
+    />
+
+    {/* Sidebar */}
+    <aside className="fixed top-0 left-0 h-full w-[260px] max-w-[80vw] bg-white z-50 p-6 lg:hidden">
+      <div className=" font-bold text-lg  text-blue-700">Menu</div>
+        {/* Sidebar Logo */}
+<div className="flex items-center justify-center">
+  <img
+    src="https://lh3.googleusercontent.com/u/0/d/1f4qSF9eLf0IFr_bIiajaCJJkyuW2l_OB"
+    alt="Platform Logo"
+    className="h-35 w-auto"
+  />
+</div>
+      <nav className=" text-slate-600">
+        <SidebarItem icon={<Home size={18} />} label="Home" active />
+        <Link href="/dashboard/exams">
+          <SidebarItem icon={<ClipboardList size={18} />} label="Exams" />
+        </Link>
+        <Link href="/dashboard/tint">
+          <SidebarItem icon={<BookOpen size={18} />} label="Materials" />
+        </Link>
+        <Link href="/dashboard/progress">
+          <SidebarItem icon={<TrendingUp size={18} />} label="Progress" />
+        </Link>
+      </nav>
+
+      <button
+        onClick={handleLogout}
+        className="mt-10 flex items-center gap-2 text-red-500 font-semibold"
+      >
+        <LogOut size={18} />
+        Logout
+      </button>
+    </aside>
+  </>
+)}
       {/* Main */}
-      <main className="flex-1 overflow-hidden p-5">
+      <main className="flex-1 overflow-hidden p-3 pt-16 lg:p-5 lg:pt-5">
         {/* Top Bar */}
-        <div className="flex justify-between items-center mb-3">
+        <div className="hidden lg:flex justify-between items-center mb-3">
           <h1 className="text-xl font-bold">
             <TextType
               text={`Hello, ${user?.name || "Student"}`}
@@ -207,7 +282,7 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-4">
             <button className="relative p-2 text-slate-600 hover:text-blue-600 transition">
               <Bell size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full  text-blue-700"></span>
             </button>
 
             <Link
@@ -223,7 +298,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <StatCard title="Total Test" value={stats.totalTests} />
           <StatCard title="Completed Test" value={stats.completedTests} />
           <StatCard title="Available Tests" value={stats.availableTests} />
@@ -235,7 +310,7 @@ export default function StudentDashboard() {
 
         {/* Courses and Calendar */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow flex flex-col h-full">
+          <div className="bg-white rounded-2xl p-4 shadow flex flex-col h-[320px] sm:h-[360px] lg:h-full">
             <h2 className="font-bold mb-6 text-blue-700">Test Performance</h2>
 
             {/* Chart Container */}
