@@ -69,7 +69,7 @@ router.get('/student/dashboard-stats', authenticateJWT, authorizeRoles('student'
 router.get('/student/rankings', authenticateJWT, authorizeRoles('student'), async (req: AuthRequest, res: any) => {
     try {
         const collegeId = req.user?.college_id;
-        
+
         // Fetch all students in the college with their total scores
         const result = await query(`
             SELECT 
@@ -151,7 +151,7 @@ router.get('/tpo/dashboard-stats', authenticateJWT, authorizeRoles('tpo'), async
         const attemptCount = parseInt(totalAttempts.rows[0].count);
 
         const possibleAttempts = examCount * studentCount;
-        const participationRate = possibleAttempts > 0 
+        const participationRate = possibleAttempts > 0
             ? Math.round((attemptCount / possibleAttempts) * 100)
             : 0;
 
@@ -167,19 +167,75 @@ router.get('/tpo/dashboard-stats', authenticateJWT, authorizeRoles('tpo'), async
     }
 });
 
-// TPO: Get All Students
+// TPO: Get All Students with Violation Counts
 router.get('/tpo/students', authenticateJWT, authorizeRoles('tpo'), async (req: AuthRequest, res: any) => {
     try {
         const users = await query(`
-            SELECT id, name, email, created_at, last_login_at
-            FROM users 
-            WHERE college_id = $1 AND role = 'student'
-            ORDER BY name ASC
+            SELECT 
+                u.id, 
+                u.name, 
+                u.email, 
+                u.created_at, 
+                u.last_login_at,
+                (
+                    SELECT COUNT(*) 
+                    FROM integrity_logs il 
+                    JOIN attempts a ON il.attempt_id = a.id 
+                    WHERE a.student_id = u.id
+                ) as violations_count,
+                (
+                    SELECT json_build_object(
+                        'tab_switches', COUNT(*) FILTER (WHERE il.type = 'tab_switch'),
+                        'window_blur', COUNT(*) FILTER (WHERE il.type = 'window_blur'),
+                        'fast_answering', COUNT(*) FILTER (WHERE il.type = 'fast_answering')
+                    )
+                    FROM integrity_logs il
+                    JOIN attempts a ON il.attempt_id = a.id
+                    WHERE a.student_id = u.id
+                ) as violation_details
+            FROM users u
+            WHERE u.college_id = $1 AND u.role = 'student'
+            ORDER BY u.name ASC
         `, [req.user?.college_id]);
-        
-        res.json(users.rows);
+
+        // Map the database snake_case keys for details to what frontend expects if needed,
+        // though frontend uses matching keys currently.
+        const mappedUsers = users.rows.map((u: any) => ({
+            ...u,
+            violations: parseInt(u.violations_count),
+            violationDetails: u.violation_details
+        }));
+
+        res.json(mappedUsers);
     } catch (err) {
+        console.error('Fetch Students Error:', err);
         res.status(500).json({ error: 'Failed to fetch students' });
+    }
+});
+
+// TPO: Get Recent Violations (Global Feed)
+router.get('/tpo/recent-violations', authenticateJWT, authorizeRoles('tpo'), async (req: AuthRequest, res: any) => {
+    try {
+        const result = await query(`
+            SELECT 
+                a.id,
+                u.name as "studentName",
+                json_agg(json_build_object('type', il.type, 'timestamp', il.created_at)) as violations,
+                MAX(il.created_at) as latest_violation
+            FROM integrity_logs il
+            JOIN attempts a ON il.attempt_id = a.id
+            JOIN users u ON a.student_id = u.id
+            JOIN exams e ON a.exam_id = e.id
+            WHERE e.college_id = $1
+            GROUP BY a.id, u.name
+            ORDER BY latest_violation DESC
+            LIMIT 10
+        `, [req.user?.college_id]);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Recent Violations Error:', err);
+        res.status(500).json({ error: 'Failed to fetch recent violations' });
     }
 });
 

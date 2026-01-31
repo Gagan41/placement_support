@@ -19,12 +19,7 @@ export default function ExamsPage() {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold">Manage Placement Exams</h2>
-        <Link 
-          href="/dashboard/exams/new" 
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-        >
-          Create New Exam
-        </Link>
+
       </div>
 
       {loading ? (
