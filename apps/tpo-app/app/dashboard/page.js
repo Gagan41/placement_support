@@ -5,15 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   TrendingUp,
-  Bell,
   FileQuestion,
   AlertTriangle,
-  PlusCircle
 } from "lucide-react";
-import TextType from "@/components/TextType";
 import ParticleCard from "@/components/ParticleCard";
 import { apiFetch } from '@/lib/api';
-import { DashboardLayout } from '@/components/DashboardLayout';
+import PieChart from "@/components/PieChart";
+import EventCalendar from "@/components/EventCalendar";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -28,34 +26,35 @@ export default function AdminDashboard() {
   });
   const [recentQuizzes, setRecentQuizzes] = useState([]);
   const [recentViolations, setRecentViolations] = useState([]);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Initialize Data
   useEffect(() => {
     const userData = localStorage.getItem("user");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (userData) setUser(JSON.parse(userData));
 
     async function fetchData() {
       try {
-        const [statsData, examsData] = await Promise.all([
+        const [statsData, examsData, violationsData] = await Promise.all([
           apiFetch('/analytics/tpo/dashboard-stats'),
-          apiFetch('/exams')
+          apiFetch('/exams'),
+          apiFetch('/analytics/tpo/recent-violations')
         ]);
 
         setStats({
           totalQuizzes: statsData.exam_count || 0,
-          totalAttempts: 0, // Not available in basic stats
+          totalAttempts: 0,
           totalStudents: statsData.student_count || 0,
-          averageScore: statsData.participation_rate || 0, // Using participation rate as proxy or placeholder
+          averageScore: statsData.participation_rate || 0,
         });
 
-        // Use exams data for recent quizzes
         if (Array.isArray(examsData)) {
           setRecentQuizzes(examsData.slice(0, 4));
         }
 
-        // For violations, we'll keep it empty for now as we don't have a global endpoint
-        setRecentViolations([]);
+        if (Array.isArray(violationsData)) {
+          setRecentViolations(violationsData);
+        }
 
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
@@ -66,55 +65,25 @@ export default function AdminDashboard() {
   }, []);
 
   return (
-    <DashboardLayout>
-      <div className="flex-1 overflow-hidden p-3 pt-0 lg:p-5 lg:pt-0">
-        {/* Top Bar */}
-        <div className="hidden lg:flex justify-between items-center mb-6">
-          <h1 className="text-xl font-bold">
-            <TextType
-              text={`Welcome back, ${user?.name || "Admin"}`}
-              typingSpeed={60}
-              pauseDuration={1200}
-              cursorCharacter="_"
-              className="inline"
-              showCursor
-              textColors={["blue"]}
-            />
-          </h1>
+    <div className="flex-1 overflow-hidden p-3 pt-0 lg:p-5 lg:pt-0">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatCard title="Total Quizzes" value={stats.totalQuizzes} />
+        <StatCard title="Total Attempts" value={stats.totalAttempts} />
+        <StatCard title="Active Students" value={stats.totalStudents} />
+        <StatCard
+          title="Avg Score"
+          value={`${stats.averageScore}%`}
+        />
+      </div>
 
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard/exams/new"
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-            >
-              <PlusCircle size={18} />
-              Create Quiz
-            </Link>
-            <button className="relative p-2 text-slate-600 hover:text-blue-600 transition">
-              <Bell size={18} />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-            <div className="w-9 h-9 bg-blue-200 rounded-full flex items-center justify-center text-xs font-semibold text-blue-700">
-              A
-            </div>
-          </div>
-        </div>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full pb-6">
+        {/* Left Column */}
+        <div className="flex flex-col gap-6 h-full">
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard title="Total Quizzes" value={stats.totalQuizzes} />
-          <StatCard title="Total Attempts" value={stats.totalAttempts} />
-          <StatCard title="Active Students" value={stats.totalStudents} />
-          <StatCard
-            title="Avg Score"
-            value={`${stats.averageScore}%`}
-          />
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Quizzes */}
-          <div className="bg-white rounded-2xl p-6 shadow flex flex-col h-full">
+          {/* Recent Quizzes (Top) */}
+          <div className="bg-white rounded-2xl p-6 shadow flex flex-col flex-1 min-h-[400px]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="font-bold text-blue-700 text-lg flex items-center gap-2">
                 <FileQuestion size={20} />
@@ -123,7 +92,7 @@ export default function AdminDashboard() {
               <Link href="/dashboard/exams" className="text-sm text-blue-500 hover:underline">View All</Link>
             </div>
 
-            <div className="space-y-4 overflow-y-auto pr-2">
+            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
               {recentQuizzes.map((quiz) => (
                 <div
                   key={quiz.id}
@@ -148,9 +117,28 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Pie Chart (Bottom) */}
+          <div className="bg-white rounded-2xl p-6 shadow flex flex-col justify-center h-full max-h-[300px]">
+            <PieChart
+              title="Student Performance (Avg)"
+              data={[
+                { label: 'High Score (>80%)', value: 120, color: 'text-green-500', bgClass: 'bg-green-500' },
+                { label: 'Average (50-80%)', value: 85, color: 'text-blue-500', bgClass: 'bg-blue-500' },
+                { label: 'Needs Impr. (<50%)', value: 45, color: 'text-red-500', bgClass: 'bg-red-500' }
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="flex flex-col gap-6 h-full">
+          <div className="flex-1 min-h-[400px]">
+            <EventCalendar />
+          </div>
+
           {/* Monitoring Alerts */}
           <ParticleCard glowColor="239, 68, 68" particleCount={15} className="bg-white rounded-2xl shadow">
-            <div className="p-6 h-full flex flex-col">
+            <div className="p-6 h-full flex flex-col max-h-[300px]">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-bold text-red-600 text-lg flex items-center gap-2">
                   <AlertTriangle size={20} />
@@ -158,9 +146,9 @@ export default function AdminDashboard() {
                 </h2>
               </div>
 
-              <div className="space-y-3 flex-1 overflow-y-auto">
+              <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
                 {recentViolations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-40 text-slate-400">
+                  <div className="flex flex-col items-center justify-center h-full text-slate-400 py-4">
                     <TrendingUp size={32} className="mb-2 opacity-50" />
                     <p className="text-sm">No recent violations</p>
                   </div>
@@ -196,16 +184,14 @@ export default function AdminDashboard() {
           </ParticleCard>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
-
-
 
 function StatCard({ title, value }) {
   return (
     <ParticleCard glowColor="59, 130, 246" particleCount={8}>
-      <div className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 group">
+      <div className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border-2 border-blue-100 hover:border-blue-500 hover:-translate-y-1 group">
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">
           {title}
         </p>

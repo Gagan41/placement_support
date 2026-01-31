@@ -68,10 +68,10 @@ export function DashboardLayout({ children }) {
         <nav className="space-y-3">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
-              <SidebarItem 
-                icon={item.icon} 
-                label={item.label} 
-                active={pathname === item.href} 
+              <SidebarItem
+                icon={item.icon}
+                label={item.label}
+                active={pathname === item.href}
               />
             </Link>
           ))}
@@ -127,12 +127,12 @@ export function DashboardLayout({ children }) {
           <aside className="fixed top-0 left-0 h-full w-[280px] bg-white z-50 p-8 lg:hidden animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between mb-10">
               <span className="font-black text-xl text-blue-700 tracking-tight">Navigation</span>
-              <button 
+              <button
                 onClick={() => setMobileSidebarOpen(false)}
                 className="text-slate-400 hover:text-slate-600"
               >✕</button>
             </div>
-            
+
             <div className="flex items-center justify-center mb-10">
               <img
                 src="https://lh3.googleusercontent.com/u/0/d/1f4qSF9eLf0IFr_bIiajaCJJkyuW2l_OB"
@@ -144,10 +144,10 @@ export function DashboardLayout({ children }) {
             <nav className="space-y-4">
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href} onClick={() => setMobileSidebarOpen(false)}>
-                  <SidebarItem 
-                    icon={item.icon} 
-                    label={item.label} 
-                    active={pathname === item.href} 
+                  <SidebarItem
+                    icon={item.icon}
+                    label={item.label}
+                    active={pathname === item.href}
                   />
                 </Link>
               ))}

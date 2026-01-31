@@ -9,7 +9,9 @@ export default function StudentsPage() {
 
   useEffect(() => {
     apiFetch('/analytics/tpo/students')
-      .then(setStudents)
+      .then((data) => {
+        setStudents(data || []);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -29,6 +31,7 @@ export default function StudentsPage() {
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Joined Date</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Violations</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -44,11 +47,31 @@ export default function StudentsPage() {
                       Active
                     </span>
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {student.violations > 0 ? (
+                      <div className="group relative inline-block">
+                        <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase tracking-wide cursor-help">
+                          {student.violations} Detected
+                        </span>
+                        {/* Tooltip for details */}
+                        <div className="absolute left-0 bottom-full mb-2 w-48 bg-slate-800 text-white text-xs rounded-lg p-3 hidden group-hover:block z-10 shadow-lg">
+                          <div className="font-bold mb-1 border-b border-slate-600 pb-1">Activity Log</div>
+                          <div className="flex justify-between"><span>Tab Switch:</span> <span>{student.violationDetails?.tab_switches}</span></div>
+                          <div className="flex justify-between"><span>Window Blur:</span> <span>{student.violationDetails?.window_blur}</span></div>
+                          <div className="flex justify-between"><span>Fast Ans:</span> <span>{student.violationDetails?.fast_answering}</span></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-bold uppercase tracking-wide">
+                        Clean
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {students.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-slate-400 italic">No students enrolled yet.</td>
+                  <td colSpan="5" className="px-6 py-12 text-center text-slate-400 italic">No students enrolled yet.</td>
                 </tr>
               )}
             </tbody>
